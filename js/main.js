@@ -2,7 +2,13 @@
 let gameScene = new Phaser.Scene('Game');
 
 // some parameters for our scene
-gameScene.init = function() {};
+gameScene.init = function() {
+
+
+  this.playerSpeed = 150;
+  this.jumpSpeed = -600;
+
+};
 
 // load asset files for our game
 gameScene.preload = function() {
@@ -43,21 +49,61 @@ gameScene.create = function() {
   this.physics.add.existing(platform, true); 
 
 
-    // player 
-    let player = this.add.sprite(180, 400, 'player', 3);
-    this.physics.add.existing(player, false); 
-  
+  // player 
+  this.player = this.add.sprite(180, 400, 'player', 3);
+  this.physics.add.existing(this.player, false); 
+
+
+  this.anims.create({
+    key: 'walking',
+    frames: this.anims.generateFrameNames('player', {
+      frames: [0, 1, 2],
+      frameRate: 12,
+      yoyo: true,
+      repeat: -1
+    })
+  })
 
   // make all the surfaces into the same group
   this.surfaces = this.add.group();
   this.surfaces.add(ground);
   this.surfaces.add(platform);
-  this.physics.add.collider(player, this.surfaces);
+  this.physics.add.collider(this.player, this.surfaces);
 
 
+  // allow the player to move
+
+  this.cursors = this.input.keyboard.createCursorKeys();
 
 
 };
+
+gameScene.update = function() {
+  
+  if (this.cursors.left.isDown) {
+
+      if (!this.player.anims.isPlaying) {
+        this.player.body.setVelocityX(-this.playerSpeed);
+        this.player.anims.play('walking');
+        this.player.flipX = false;
+      }
+
+
+  } else if(this.cursors.right.isDown) {
+
+    if (!this.player.anims.isPlaying) {
+      this.player.body.setVelocityX(this.playerSpeed);
+      this.player.anims.play('walking');
+        this.player.flipX = true;
+    }
+
+    
+  } else {
+    this.player.body.setVelocityX(0);
+    this.player.anims.stop('walking');
+    this.player.setFrame(3);
+  }
+}
 
 // our game's configuration
 const config = {

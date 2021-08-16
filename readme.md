@@ -125,3 +125,89 @@ GROUP OF ELEMENTS (better way):
 
 
 ```
+
+### Lesson 4: 
+
+**Making the player walk**
+
+The sprites are in a single file.
+
+```js
+gameScene.preload() {
+    this.load.spritesheet('player', 'assets/images/player_spritesheet.png', {
+    frameWidth: 28,
+    frameHeight: 30,
+    margin: 1,
+    spacing: 1
+  });
+
+}
+
+gameScene.create() {
+
+    //...
+  this.anims.create({
+    key: 'walking',
+    frames: this.anims.generateFrameNames('player', {
+      frames: [0, 1, 2],
+      frameRate: 12,
+      yoyo: true,
+      repeat: -1
+    })
+  })
+}
+
+gameScene.update = function() {
+  
+  // controllers. 
+  if (this.cursors.left.isDown) {
+    this.player.body.setVelocityX(-100);
+  } else if(this.cursors.right.isDown) {
+    this.player.body.setVelocityX(100);
+  } else {
+    this.player.body.setVelocityX(0);
+  }
+}
+
+```
+
+For flipping, animations, etc
+```js
+gameScene.update = function() {
+  
+  if (this.cursors.left.isDown) {
+
+      if (!this.player.anims.isPlaying) {
+        this.player.body.setVelocityX(-100);
+        this.player.anims.play('walking');
+        this.player.flipX = false;
+      }
+
+
+  } else if(this.cursors.right.isDown) {
+
+    if (!this.player.anims.isPlaying) {
+      this.player.body.setVelocityX(100);
+      this.player.anims.play('walking');
+        this.player.flipX = true;
+    }
+
+    
+  } else {
+    this.player.body.setVelocityX(0);
+    this.player.anims.stop('walking');
+    this.player.setFrame(3);
+  }
+}
+```
+
+**The game loop and declaring global values**
+
+```js
+    // this is declared only within the function it was called.
+    let ground = this.add.sprite(180, 604, 'ground'); 
+
+    // this attaches the element into the entire scene. So you can use it in many places.
+    this.player = this.add.sprite(180, 400, 'player', 3);
+
+```
