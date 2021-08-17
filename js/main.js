@@ -5,6 +5,8 @@ let gameScene = new Phaser.Scene('Game');
 gameScene.init = function () {
     this.playerSpeed = 150;
     this.jumpSpeed = -600;
+
+    this.debug = true;
 };
 
 // load asset files for our game
@@ -30,45 +32,28 @@ gameScene.preload = function () {
         margin: 1,
         spacing: 1,
     });
+
+    this.load.json('levelData', 'assets/levels/levelData.json');
 };
 
 // executed once, after assets were loaded
 gameScene.create = function () {
-    // define world bounds
-    this.physics.world.bounds.width = 360;
-    this.physics.world.bounds.height = 700;
+    this.setDebug();
 
-    // ground
-    let ground = this.add.sprite(180, 604, 'ground');
-    this.physics.add.existing(ground, true); // add sprite to the physics system
 
-    // platforms
-    let platform = this.add.tileSprite(176, 384, 4 * 36, 1 * 30, 'block');
-    this.physics.add.existing(platform, true);
+    // add level elements
+    this.setupLevel();
 
-    // player
-    this.player = this.add.sprite(180, 400, 'player', 3);
-    this.physics.add.existing(this.player, false);
-    this.player.body.setCollideWorldBounds(true); // stay within the screen
+    this.setupCamera();
 
-    this.anims.create({
-        key: 'walking',
-        frames: this.anims.generateFrameNames('player', {
-            frames: [0, 1, 2],
-            frameRate: 12,
-            yoyo: true,
-            repeat: -1,
-        }),
-    });
+    // So that the goal and player to not go through walls
+    this.physics.add.collider([this.player, this.goal], this.surfaces);
 
-    // make all the surfaces into the same group
-    this.surfaces = this.add.group();
-    this.surfaces.add(ground);
-    this.surfaces.add(platform);
-    this.physics.add.collider(this.player, this.surfaces);
+    // add collision detection
+    this.physics.add.overlap(this.player, [this.hazards, this.goal], this.restartGame, null, this);
 
-    // allow the player to move
 
+    // allow the player to move by tying the keyboard to game
     this.cursors = this.input.keyboard.createCursorKeys();
 };
 
@@ -112,12 +97,161 @@ gameScene.update = function () {
         this.player.anims.stop('walking');
         this.player.setFrame(2);
     }
-
-    // turn on debugging 
-    this.input.on('pointerdown', function(pointer) {
-      console.log(pointer.x, pointer.y);
-    })
 };
+
+gameScene.setDebug = function () {
+    if (this.debug) {
+        // announce it
+        console.warn('DEBUG IS ON');
+
+        // make things draggable
+        this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+            gameObject.x = dragX;
+            gameObject.y = dragY;
+
+            console.log(dragX, dragY);
+        });
+
+        // click gives things
+        // TODO: round to nearest .00
+        this.input.on('pointerdown', function (pointer) {
+            console.log(`you've clicked at: ${pointer.x}, ${pointer.y}`);
+        });
+    }
+};
+
+gameScene.setupLevel = function() {
+    // create the groups
+    this.surfaces = this.physics.add.staticGroup();
+    this.hazards = this.physics.add.group({
+        allowGravity: false,
+        immovable: true,
+    });
+
+    // load json data
+    this.levelData = this.cache.json.get('levelData');
+
+    // create player
+    this.player = this.add.sprite(
+        this.levelData.player.x,
+        this.levelData.player.y,
+        'player',
+        3
+    );
+    this.physics.add.existing(this.player, false);
+    this.player.body.setCollideWorldBounds(true); // stay within the screen
+
+    // walk animation
+    this.anims.create({
+        key: 'walking',
+        frames: this.anims.generateFrameNames('player', {
+            frames: [0, 1, 2],
+        }),
+        frameRate: 12,
+        yoyo: true,
+        repeat: -1,
+    });
+
+    // fire animation
+    this.anims.create({
+        key: 'fireBurning',
+        frames: this.anims.generateFrameNames('fire', {
+            frames: [0, 1],
+        }),
+        frameRate: 4,
+        yoyo: true,
+        repeat: -1,
+    });
+
+    // create all the platforms
+    for (let platform of this.levelData.platforms) {
+        let newObj;
+
+        if (platform.tileCount == 1) {
+            // create sprite
+            newObj = this.add
+                .sprite(platform.x, platform.y, platform.tileName)
+                .setOrigin(0);
+        } else {
+            // get dimension of the blocks
+            let tileWidth = this.textures.get(platform.tileName).get(0).width;
+            let tileHeight = this.textures.get(platform.tileName).get(0).height;
+
+            // create tile sprite
+            newObj = this.add
+                .tileSprite(
+                    platform.x,
+                    platform.y,
+                    platform.tileCount * tileWidth,
+                    tileHeight,
+                    platform.tileName
+                )
+                .setOrigin(0);
+        }
+
+        // let platform = this.add.tileSprite(176, 384, 4 * 36, 1 * 30, 'block');
+        // this.physics.add.existing(platform, true);
+
+        // enable physics and make it static.
+        this.physics.add.existing(newObj, true);
+        this.surfaces.add(newObj);
+    }
+
+    // create all the fires
+    for (let element of this.levelData.fires) {
+        // let newObj = this.add.sprite(element.x, element.y, 'fire').setOrigin(0);
+
+        let newObj = this.hazards
+            .create(element.x, element.y, 'fire')
+            .setOrigin(0);
+
+        newObj.anims.play('fireBurning');
+        // this.hazards.add(newObj);
+
+        // debugging
+        if (this.debug) {
+            newObj.setInteractive();
+            this.input.setDraggable(newObj);
+        }
+    }
+
+    // goal
+    this.goal = this.add
+        .sprite(this.levelData.goal.x, this.levelData.goal.y, 'goal')
+        .setOrigin(0);
+    this.physics.add.existing(this.goal, false);
+};
+
+gameScene.setupCamera = function() {
+
+  this.levelData = this.cache.json.get('levelData');
+  let worldWidth = this.levelData.world.bounds.width;
+  let worldHeight = this.levelData.world.bounds.height
+
+  // define world bounds
+  this.physics.world.bounds.width = worldWidth;
+  this.physics.world.bounds.height = worldHeight;
+
+  // console.log({worldWidth});
+  // console.log({worldHeight});
+
+  // camera bounds
+  this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+  this.cameras.main.startFollow(this.player);
+
+}
+
+gameScene.restartGame = function() {
+
+  // fade out
+  this.cameras.main.fade(500);
+
+  // when fade out completes, restart scene
+  this.cameras.main.on('camerafadeoutcomplete', function(camera, effect) {
+    this.scene.restart();
+  }, this);
+
+}
 
 // our game's configuration
 const config = {
@@ -137,6 +271,7 @@ const config = {
             gravity: { y: 1000 }, // determines speed of falling
             debug: true,
         },
+        debug: this.debug,
     },
 };
 

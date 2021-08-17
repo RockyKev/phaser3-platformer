@@ -212,7 +212,7 @@ gameScene.update = function() {
 
 ```
 
-## Lesson 5
+### Lesson 5
 
 **Make the player jump**
 
@@ -239,7 +239,112 @@ gameScene.update() {
 
 ```
 
-## Level 6
+### Level 6
+
+**Creating an animation from a spritesheet**
+
+```js 
+  // fire animation    
+  this.anims.create({
+    key: 'fireBurning',
+    frames: this.anims.generateFrameNames('fire', {
+        frames: [0, 1],
+    }),
+      frameRate: 4,
+      repeat: -1,
+  });    
+
+// then add it to your element
+  newObj.anims.play('fireBurning');
+
+```
+
+
 
 **Making a Level with JSON**
 
+```js
+gameScene.preload = function () {
+  
+    this.load.json('levelData', 'assets/levels/levelData.json')
+};
+
+
+gameScene.create = function () {
+    // load json data
+    this.levelData = this.cache.json.get('levelData');
+
+ for (let platform of this.levelData.platforms) {
+        let newObj;
+
+        if (platform.tileCount == 1) {
+            // create sprite
+            newObj = this.add.sprite(platform.x, platform.y, platform.tileName).setOrigin(0);
+        } else {
+            // get dimension of the blocks
+            let tileWidth = this.textures.get(platform.tileName).get(0).width;
+            let tileHeight = this.textures.get(platform.tileName).get(0).height;
+
+            // create tile sprite
+            newObj = this.add.tileSprite(
+                platform.x,
+                platform.y,
+                platform.tileCount * tileWidth,
+                tileHeight,
+                platform.tileName
+            ).setOrigin(0);
+        }
+
+ }
+}
+
+
+```
+
+### Level 7
+
+**Make something draggable**
+
+```js
+// debugging
+newObj.setInteractive();
+this.input.setDraggable(newObj);
+
+
+this.input.on('drag', function(pointer, gameObject, dragX, dragY){
+  gameObject.x = dragX;
+  gameObject.y = dragY;
+
+  console.log(dragX, dragY);
+
+});
+```
+
+**Software for tiling**
+Check out TILED to help you lay out levels.
+
+
+### Level 8
+
+**Optimization stategies on physics groups**
+```js
+    // create the groups
+    this.surfaces = this.add.group();
+    this.hazards = this.add.group();
+
+    // newObj.body.allowGravity = false;
+    // newObj.body.immovable = true;
+```
+
+instead go for
+
+```js
+    // create the groups
+    // hazards is dynamic
+    this.surfaces = this.physics.add.staticGroup();
+    this.hazards = this.physics.add.group({
+      gravity: false,
+      immovable: true
+    });
+
+```
