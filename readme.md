@@ -211,3 +211,35 @@ gameScene.update = function() {
     this.player = this.add.sprite(180, 400, 'player', 3);
 
 ```
+
+## Lesson 5
+
+**Make the player jump**
+
+```js
+gameScene.update() {
+
+  
+  // Test that are we on the ground
+  let onGround = this.player.body.blocked.down || this.player.body.touching.down; 
+
+  // if you are on the ground, then fire the commands.
+
+  // handing jump
+  if (onGround && (this.cursors.space.isDown || this.cursors.up.isDown)) {
+
+    // give the player a velocity in Y
+    this.player.body.setVelocityY(this.jumpSpeed);
+    this.player.anims.stop('walking');
+    this.player.setFrame(2)
+
+  }
+
+}
+
+```
+
+## Level 6
+
+**Making a Level with JSON**
+
