@@ -13,7 +13,8 @@
       "height": 700
     }
   },
-  "platforms": [{
+  "platforms": [
+    {
       "x": 72,
       "y": 450,
       "tileCount": 6,
@@ -61,5 +62,10 @@
       "x": 87.7,
       "y": 427
     }
-  ]
+  ],
+  "barrelSpawner": {
+    "interval": 3000,
+    "speed": 60,
+    "lifespan": 10000
+  }
 }

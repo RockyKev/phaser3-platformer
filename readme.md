@@ -348,3 +348,84 @@ instead go for
     });
 
 ```
+
+## Level 9 
+
+**Create and Destroy VS reuse**
+
+This creates a barrel. And then destroys it. 
+But then it creates it again... putting it on the stack.
+
+```js
+ // barrel group
+  this.barrels = this.physics.add.group({
+    bounceY: 0.1, 
+    bounceX: 1,
+    collideWorldBounds: true
+  })
+
+
+  let spawningEvent = this.time.addEvent({
+    delay: this.levelData.barrelSpawner.interval,
+    loop: true,
+    callbackScope: this, 
+    callback: function() {
+      // create a barrel
+      let barrel = this.barrels.create(this.goal.x, this.goal.y, 'barrel')
+
+      // set properties
+      barrel.setVelocityX(this.levelData.barrelSpawner.speed);
+
+      // lifespan
+      this.time.addEvent({
+        delay: this.levelData.barrelSpawner.lifespan,
+        repeat: 0,
+        callbackScope: this,
+        callback: function() {
+          barrel.destroy();
+        }
+      })
+
+    }
+  })
+
+```
+
+This uses a `get`, which will look for it in the pull before creating a new one.
+
+```js
+ // barrel group
+  this.barrels = this.physics.add.group({
+    bounceY: 0.1, 
+    bounceX: 1,
+    collideWorldBounds: true
+  })
+
+
+  let spawningEvent = this.time.addEvent({
+    delay: this.levelData.barrelSpawner.interval,
+    loop: true,
+    callbackScope: this, 
+    callback: function() {
+      // create a barrel
+      // let barrel = this.barrels.create(this.goal.x, this.goal.y, 'barrel')
+      let barrel = this.barrels.get(this.goal.x, this.goal.y, 'barrel')
+
+      // set properties
+      barrel.setVelocityX(this.levelData.barrelSpawner.speed);
+
+      // lifespan
+      this.time.addEvent({
+        delay: this.levelData.barrelSpawner.lifespan,
+        repeat: 0,
+        callbackScope: this,
+        callback: function() {
+          // barrel.destroy();
+          this.barrels.killAndHide(barrel);
+        }
+      })
+
+    }
+  })
+
+```

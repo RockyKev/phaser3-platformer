@@ -40,17 +40,19 @@ gameScene.preload = function () {
 gameScene.create = function () {
     this.setDebug();
 
-
     // add level elements
     this.setupLevel();
 
     this.setupCamera();
 
+    this.setupSpawner();
+
+
     // So that the goal and player to not go through walls
-    this.physics.add.collider([this.player, this.goal], this.surfaces);
+    this.physics.add.collider([this.player, this.goal, this.barrels], this.surfaces);
 
     // add collision detection
-    this.physics.add.overlap(this.player, [this.hazards, this.goal], this.restartGame, null, this);
+    this.physics.add.overlap(this.player, [this.hazards, this.goal, this.barrels], this.restartGame, null, this);
 
 
     // allow the player to move by tying the keyboard to game
@@ -238,6 +240,52 @@ gameScene.setupCamera = function() {
   // camera bounds
   this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
   this.cameras.main.startFollow(this.player);
+
+}
+
+gameScene.setupSpawner = function() {
+
+  this.levelData = this.cache.json.get('levelData');
+
+  // barrel group
+  this.barrels = this.physics.add.group({
+    bounceY: 0.1, 
+    bounceX: 1,
+    collideWorldBounds: true
+  })
+
+
+  let spawningEvent = this.time.addEvent({
+    delay: this.levelData.barrelSpawner.interval,
+    loop: true,
+    callbackScope: this, 
+    callback: function() {
+      // create a barrel
+      let barrel = this.barrels.get(this.goal.x, this.goal.y, 'barrel')
+      barrel.setVisible(true);
+      barrel.body.enable = true;
+
+      // set properties
+      barrel.setVelocityX(this.levelData.barrelSpawner.speed);
+
+
+      console.log(this.barrels.getChildren().length);
+
+      // lifespan
+      this.time.addEvent({
+        delay: this.levelData.barrelSpawner.lifespan,
+        repeat: 0,
+        callbackScope: this,
+        callback: function() {
+          this.barrels.killAndHide(barrel);
+          barrel.body.enable = false;
+        }
+      })
+
+
+    }
+  })
+
 
 }
 
